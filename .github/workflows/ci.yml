@@ -27,7 +27,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.3129:sonar \
+          mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.697:sonar \
             -Dsonar.projectKey=springboot-demo \
             -Dsonar.projectName=springboot-demo \
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
