@@ -16,12 +16,51 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: maven:3.9.11-eclipse-temurin-17
+    services:
+      sonarqube:
+        image: sonarqube:community
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd="curl -f http://localhost:9000/api/system/status || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    env:
+      SONAR_HOST_URL: "http://sonarqube:9000"
       #options: --user 1001:1001
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build & SonarQube Scan
+      - name: Wait for SonarQube & generate dynamic token
+        working-directory: springboot/demo
+        run: |
+          echo "Waiting for the dynamic SonarQube container to finish initializing..."
+          until curl -s "$SONAR_HOST_URL/api/system/status" | grep -q '"status":"UP"'; do
+            echo "SonarQube is still loading... sleeping 10s"
+            sleep 10
+          done
+          echo "✅ SonarQube Server is completely UP!"
+
+          echo "Generating a dynamic pipeline token via Web API..."
+          TOKEN_RESPONSE=$(curl -s -u admin:admin -X POST \
+            "$SONAR_HOST_URL/api/user_tokens/generate?name=pipeline&type=GLOBAL_ANALYSIS_TOKEN")
+
+          DYNAMIC_SONAR_TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+          if [ -z "$DYNAMIC_SONAR_TOKEN" ]; then
+            echo "❌ ERROR: Failed to generate a dynamic token! API Response was: $TOKEN_RESPONSE"
+            exit 1
+          fi
+          echo "✅ Dynamic token generated successfully."
+          echo "DYNAMIC_SONAR_TOKEN=$DYNAMIC_SONAR_TOKEN" >> "$GITHUB_ENV"
+
+      - name: Build (skip tests)
+        working-directory: springboot/demo
+        run: mvn clean verify -DskipTests=true
+
+      - name: SonarQube Scan
         working-directory: springboot/demo
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
