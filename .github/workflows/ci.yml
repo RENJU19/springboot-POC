@@ -13,9 +13,7 @@ env:
 jobs:
   build-and-scan:
     name: Build, Test & SonarQube Scan
-    runs-on: self-hosted
-    # Runs inside Maven container — equivalent of Jenkins: agent { docker { image 'maven:3.9.11-eclipse-temurin-17' } }
-    # JAR is created inside this container so must be uploaded before container is destroyed
+    runs-on: ubuntu-latest
     container:
       image: maven:3.9.11-eclipse-temurin-17
       options: --user 1001:1001
@@ -23,8 +21,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # maven clean verify  →  compiles .java → .class → packages into JAR
-      # sonar:sonar         →  ships analysis results to SonarQube
       - name: Build & SonarQube Scan
         working-directory: springboot/demo
         env:
@@ -37,21 +33,18 @@ jobs:
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
             -Dsonar.token=${{ env.SONAR_TOKEN }}
 
-             # Wait for Quality Gate result via SonarQube API
-            echo "Waiting for Quality Gate..."
-            sleep 10
-            STATUS=$(curl -s -u $SONAR_TOKEN: \
-           "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=springboot-demo" \
-           | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+          echo "Waiting for Quality Gate..."
+          sleep 10
+          STATUS=$(curl -s -u $SONAR_TOKEN: \
+            "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=springboot-demo" \
+            | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
           echo "Quality Gate Status: $STATUS"
           if [ "$STATUS" != "OK" ]; then
-           echo "Quality Gate FAILED"
-           exit 1
+            echo "Quality Gate FAILED"
+            exit 1
           fi
           echo "Quality Gate PASSED"
 
-      # JAR is inside the Maven container — upload before container is destroyed
-      # so docker-build-push job can access it
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
@@ -61,18 +54,13 @@ jobs:
 
   docker-build-push:
     name: Docker Build, Trivy Scan & Push
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: build-and-scan
 
     steps:
-      - name: Fix workspace permissions
-        if: always()
-        run: sudo chown -R githubrunner:githubrunner ${{ github.workspace }} || true
-        
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Download JAR produced by build-and-scan job — no recompile needed
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
