@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: maven:3.9.11-eclipse-temurin-17
-      options: --user 1001:1001
+      #options: --user 1001:1001
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
