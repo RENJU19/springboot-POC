@@ -63,15 +63,15 @@ jobs:
       - name: SonarQube Scan
         working-directory: springboot/demo
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          #SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
-            -Dsonar.projectKey=springboot-demo \
-            -Dsonar.projectName=springboot-demo \
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ env.SONAR_TOKEN }}
-
+          -Dsonar.projectName=springboot-demo \
+          -Dsonar.host.url="$SONAR_HOST_URL" \
+          -Dsonar.token="$DYNAMIC_SONAR_TOKEN" \
+          -Dsonar.qualitygate.wait=true \
+          -Dsonar.qualitygate.timeout=300
           echo "Waiting for Quality Gate..."
           sleep 10
           STATUS=$(curl -s -u $SONAR_TOKEN: \
