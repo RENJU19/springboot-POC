@@ -62,7 +62,7 @@ jobs:
 
       - name: SonarQube Scan
         working-directory: springboot/demo
-        env:
+        #env:
           #SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
