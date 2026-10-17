@@ -72,7 +72,6 @@ jobs:
           -Dsonar.qualitygate.wait=true \
           -Dsonar.qualitygate.timeout=300
           echo "Waiting for Quality Gate..."
-          sleep 10
           STATUS=$(curl -s -u $SONAR_TOKEN: \
             "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=springboot-demo" \
             | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
